@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WagePulse - Live Tracker & Editable Monthly Logs</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .glow-active {
+            box-shadow: 0 0 25px -5px rgba(34, 197, 94, 0.4);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-brand-500 selection:text-white pb-12">
+
+    <!-- Top Navigation Header with View Tabs -->
+    <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-40">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="p-2 bg-brand-500/10 text-brand-500 rounded-xl border border-brand-500/20">
+                    <i data-lucide="wallet" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base leading-tight text-white">WagePulse</h1>
+                    <p class="text-xs text-slate-400">Live Earnings & Analytics</p>
+                </div>
+            </div>
+
+            <!-- Page View Navigation Tabs -->
+            <nav class="flex bg-slate-950/80 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+                <button id="navLiveTab" onclick="switchPage('live')" class="px-3 py-1.5 rounded-lg bg-brand-500 text-slate-950 font-bold transition-all duration-200 flex items-center space-x-1.5">
+                    <i data-lucide="activity" class="w-3.5 h-3.5"></i>
+                    <span>Live Tracker</span>
+                </button>
+                <button id="navLogsTab" onclick="switchPage('logs')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all duration-200 flex items-center space-x-1.5">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                    <span>Monthly Logs & Analytics</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 pt-6">
+
+        <!-- ================= PAGE 1: LIVE TRACKER & SETUP ================= -->
+        <div id="pageLive" class="space-y-6">
+
+            <!-- REAL-TIME LIVE EARNINGS CARD -->
+            <section class="relative bg-gradient-to-b from-slate-900 to-slate-900/90 rounded-3xl p-6 sm:p-8 border border-slate-800 overflow-hidden shadow-2xl transition-all duration-300" id="mainCounterCard">
+                <div id="ambientGlow" class="absolute -top-24 -right-24 w-64 h-64 bg-brand-500/10 rounded-full blur-3xl pointer-events-none transition-opacity duration-500 opacity-0"></div>
+
+                <div class="flex items-center justify-between mb-4">
+                    <div id="statusBadge" class="inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700/50">
+                        <span id="statusDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                        <span id="statusText">CLOCKED OUT</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs text-slate-400 block uppercase tracking-wider font-semibold">Active Session</span>
+                        <span id="activeDuration" class="font-mono text-sm font-semibold text-slate-200">00:00:00</span>
+                    </div>
+                </div>
+
+                <!-- Big Live Currency Ticker -->
+                <div class="my-6 text-center sm:text-left">
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Earned Today</p>
+                    <div class="flex items-baseline justify-center sm:justify-start">
+                        <span class="text-2xl sm:text-3xl font-extrabold text-brand-500 mr-1">$</span>
+                        <span id="liveCounter" class="text-5xl sm:text-6xl font-black font-mono tracking-tight text-white">0.00</span>
+                        <span id="liveCounterSub" class="text-2xl sm:text-3xl font-mono text-slate-500 ml-0.5">.00</span>
+                    </div>
+                </div>
+
+                <!-- Rates Breakdown Grid -->
+                <div class="grid grid-cols-3 gap-2 sm:gap-4 pt-4 border-t border-slate-800/80">
+                    <div class="bg-slate-950/50 p-3 rounded-2xl border border-slate-800/50">
+                        <p class="text-[10px] sm:text-xs text-slate-400 uppercase font-semibold mb-1">Per Sec</p>
+                        <p id="ratePerSecond" class="font-mono text-xs sm:text-sm font-bold text-slate-200">$0.0000</p>
+                    </div>
+                    <div class="bg-slate-950/50 p-3 rounded-2xl border border-slate-800/50">
+                        <p class="text-[10px] sm:text-xs text-slate-400 uppercase font-semibold mb-1">Per Min</p>
+                        <p id="ratePerMinute" class="font-mono text-xs sm:text-sm font-bold text-slate-200">$0.00</p>
+                    </div>
+                    <div class="bg-slate-950/50 p-3 rounded-2xl border border-slate-800/50">
+                        <p class="text-[10px] sm:text-xs text-slate-400 uppercase font-semibold mb-1">Per Hour</p>
+                        <p id="ratePerHour" class="font-mono text-xs sm:text-sm font-bold text-slate-200">$0.00</p>
+                    </div>
+                </div>
+
+                <!-- Clock In/Out Action Button -->
+                <div class="mt-6">
+                    <button id="clockToggleBtn" class="w-full py-4 px-6 rounded-2xl font-bold text-base flex items-center justify-center space-x-3 bg-brand-500 hover:bg-brand-600 text-slate-950 transition-all duration-200 shadow-lg shadow-brand-500/20 active:scale-[0.98]">
+                        <i id="clockIcon" data-lucide="play" class="w-5 h-5 fill-slate-950"></i>
+                        <span id="clockBtnText">CLOCK IN</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- LIVE ECONOMIC INDICATORS TRACKER (BTC, S&P 500, US NATIONAL DEBT) -->
+            <section class="bg-slate-900/80 rounded-3xl p-6 border border-slate-800 shadow-lg space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+                    <h2 class="text-sm font-bold text-white flex items-center space-x-2">
+                        <i data-lucide="globe" class="w-4 h-4 text-brand-500"></i>
+                        <span>Live Global & Economic Benchmarks</span>
+                    </h2>
+                    <span class="text-[10px] text-slate-400 bg-slate-950 px-2 py-0.5 rounded-full border border-slate-800 font-mono">Live Feeds</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <!-- Bitcoin Card -->
+                    <div class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800/80 space-y-1">
+                        <div class="flex items-center justify-between text-xs text-slate-400">
+                            <span class="font-semibold text-slate-300 flex items-center space-x-1">
+                                <i data-lucide="coins" class="w-3.5 h-3.5 text-amber-500"></i>
+                                <span>Bitcoin (BTC)</span>
+                            </span>
+                            <span id="btcChange" class="font-mono text-[11px] font-semibold text-emerald-400">+0.00%</span>
+                        </div>
+                        <p id="btcPriceDisplay" class="text-xl font-bold font-mono text-white">$--,--</p>
+                        <p class="text-[10px] text-slate-500">Live Crypto Rate (USD)</p>
+                    </div>
+
+                    <!-- S&P 500 Card -->
+                    <div class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800/80 space-y-1">
+                        <div class="flex items-center justify-between text-xs text-slate-400">
+                            <span class="font-semibold text-slate-300 flex items-center space-x-1">
+                                <i data-lucide="trending-up" class="w-3.5 h-3.5 text-blue-400"></i>
+                                <span>S&P 500 (SPY)</span>
+                            </span>
+                            <span id="spChange" class="font-mono text-[11px] font-semibold text-emerald-400">+0.35%</span>
+                        </div>
+                        <p id="spPriceDisplay" class="text-xl font-bold font-mono text-white">$585.40</p>
+                        <p class="text-[10px] text-slate-500">Stock Market Benchmark</p>
+                    </div>
+
+                    <!-- US National Debt Ticker -->
+                    <div class="bg-slate-950/70 p-4 rounded-2xl border border-slate-800/80 space-y-1">
+                        <div class="flex items-center justify-between text-xs text-slate-400">
+                            <span class="font-semibold text-slate-300 flex items-center space-x-1">
+                                <i data-lucide="landmark" class="w-3.5 h-3.5 text-red-400"></i>
+                                <span>U.S. National Debt</span>
+                            </span>
+                            <span class="font-mono text-[10px] text-red-400 animate-pulse">● TICKING</span>
+                        </div>
+                        <p id="usDebtDisplay" class="text-base sm:text-lg font-bold font-mono text-red-400 tracking-tight">$36,120,450,000,000</p>
+                        <p class="text-[10px] text-slate-500">Est. Real-time National Ticker</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- WORK HISTORY & TIMEFRAME SUMMARY SECTION -->
+            <section class="bg-slate-900/80 rounded-3xl p-6 border border-slate-800 shadow-lg space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center space-x-2">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4 text-brand-500"></i>
+                            <span>Timeframe Summaries</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Quick overview of accumulated hours and net earnings</p>
+                    </div>
+                </div>
+
+                <!-- Timeframe Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Today Summary Card -->
+                    <div class="bg-slate-950/70 rounded-2xl p-4 border border-slate-800/80 space-y-3 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center space-x-1">
+                                    <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+                                    <span>Today</span>
+                                </span>
+                                <button onclick="confirmReset('day')" class="text-slate-500 hover:text-red-400 p-1 transition-colors" title="Clear Today's Shifts">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                            <div class="space-y-1">
+                                <p class="text-xs text-slate-400">Total Net Earned</p>
+                                <p id="todayNetEarned" class="text-xl font-bold font-mono text-white">$0.00</p>
+                                <p id="todayGrossEarned" class="text-xs font-mono text-slate-500">Gross: $0.00</p>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+                            <span>Time Worked:</span>
+                            <span id="todayHours" class="font-mono font-semibold text-slate-200">0h 0m</span>
+                        </div>
+                    </div>
+
+                    <!-- Weekly Summary Card -->
+                    <div class="bg-slate-950/70 rounded-2xl p-4 border border-slate-800/80 space-y-3 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center space-x-1">
+                                    <i data-lucide="calendar-days" class="w-3.5 h-3.5"></i>
+                                    <span>This Week</span>
+                                </span>
+                                <button onclick="confirmReset('week')" class="text-slate-500 hover:text-red-400 p-1 transition-colors" title="Clear Current Week's Log">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                            <div class="space-y-1">
+                                <p class="text-xs text-slate-400">Total Net Earned</p>
+                                <p id="weekNetEarned" class="text-xl font-bold font-mono text-white">$0.00</p>
+                                <p id="weekGrossEarned" class="text-xs font-mono text-slate-500">Gross: $0.00</p>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+                            <span>Time Worked:</span>
+                            <span id="weekHours" class="font-mono font-semibold text-slate-200">0h 0m</span>
+                        </div>
+                    </div>
+
+                    <!-- Monthly Summary Card -->
+                    <div class="bg-slate-950/70 rounded-2xl p-4 border border-slate-800/80 space-y-3 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-bold uppercase tracking-wider text-brand-400 flex items-center space-x-1">
+                                    <i data-lucide="calendar-range" class="w-3.5 h-3.5"></i>
+                                    <span>This Month</span>
+                                </span>
+                                <button onclick="confirmReset('month')" class="text-slate-500 hover:text-red-400 p-1 transition-colors" title="Clear Monthly Log & All Records">
+                                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                </button>
+                            </div>
+                            <div class="space-y-1">
+                                <p class="text-xs text-slate-400">Total Net Earned</p>
+                                <p id="monthNetEarned" class="text-xl font-bold font-mono text-white">$0.00</p>
+                                <p id="monthGrossEarned" class="text-xs font-mono text-slate-500">Gross: $0.00</p>
+                            </div>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
+                            <span>Time Worked:</span>
+                            <span id="monthHours" class="font-mono font-semibold text-slate-200">0h 0m</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FINANCIAL PARAMETERS & DEDUCTIONS CONFIGURATION -->
+            <div id="settingsContainer" class="space-y-6">
+                
+                <!-- Income & Work Hours Settings Card -->
+                <section class="bg-slate-900/80 rounded-3xl p-6 border border-slate-800 shadow-lg space-y-5">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-base font-bold text-white flex items-center space-x-2">
+                            <i data-lucide="sliders" class="w-4 h-4 text-brand-500"></i>
+                            <span>Income & Work Schedule</span>
+                        </h2>
+                        <span class="text-xs text-slate-400">Monthly Setup</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Total Gross Monthly Income -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Total Monthly Income ($)</label>
+                            <div class="relative">
+                                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 font-mono font-bold">$</span>
+                                <input type="number" id="monthlyIncomeInput" step="0.01" min="0" placeholder="5000.00" class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl py-2.5 pl-8 pr-4 text-white font-mono font-medium outline-none transition-all">
+                            </div>
+                        </div>
+
+                        <!-- Work Parameters -->
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Hrs / Day</label>
+                                <input type="number" id="hoursPerDayInput" step="0.5" min="0.5" max="24" value="8" class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl py-2.5 px-3 text-white font-mono font-medium outline-none transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Days / Month</label>
+                                <input type="number" id="daysPerMonthInput" step="0.1" min="1" max="31" value="21.67" class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl py-2.5 px-3 text-white font-mono font-medium outline-none transition-all">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calculated Net Income Overview -->
+                    <div class="p-4 bg-slate-950/60 rounded-2xl border border-slate-800/80 grid grid-cols-2 gap-4">
+                        <div>
+                            <span class="text-xs text-slate-400 block font-medium">Net Monthly Pay</span>
+                            <span id="netMonthlyDisplay" class="text-lg font-bold text-white font-mono">$0.00</span>
+                        </div>
+                        <div>
+                            <span class="text-xs text-slate-400 block font-medium">Gross Monthly Pay</span>
+                            <span id="grossMonthlyDisplay" class="text-lg font-bold text-slate-400 font-mono">$0.00</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Deductions List Card -->
+                <section class="bg-slate-900/80 rounded-3xl p-6 border border-slate-800 shadow-lg space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-base font-bold text-white flex items-center space-x-2">
+                                <i data-lucide="pie-chart" class="w-4 h-4 text-red-400"></i>
+                                <span>Monthly Deductions</span>
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Taxes, healthcare, 401(k), insurance, etc.</p>
+                        </div>
+                        <span id="totalDeductionsDisplay" class="text-xs font-mono font-bold text-red-400 bg-red-500/10 px-2.5 py-1 rounded-lg border border-red-500/20">-$0.00</span>
+                    </div>
+
+                    <form id="addDeductionForm" class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="deductionNameInput" placeholder="Deduction Name (e.g. Taxes)" required class="flex-1 bg-slate-950 border border-slate-800 focus:border-brand-500 rounded-xl px-3.5 py-2.5 text-sm text-white outline-none">
+                        <div class="flex gap-2">
+                            <div class="relative w-32">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 font-mono text-xs">$</span>
+                                <input type="number" id="deductionAmountInput" step="0.01" min="0" placeholder="0.00" required class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 rounded-xl py-2.5 pl-6 pr-3 text-sm font-mono text-white outline-none">
+                            </div>
+                            <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm border border-slate-700 transition-colors flex items-center justify-center space-x-1 shrink-0">
+                                <i data-lucide="plus" class="w-4 h-4"></i>
+                                <span>Add</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <div id="deductionsList" class="space-y-2 pt-2 max-h-56 overflow-y-auto no-scrollbar">
+                        <!-- Populated dynamically -->
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- ================= PAGE 2: EDITABLE MONTHLY LOGS & CHART ANALYTICS ================= -->
+        <div id="pageLogs" class="hidden space-y-6">
+
+            <!-- 12-MONTH HISTORICAL CHART SECTION -->
+            <section class="bg-slate-900/80 rounded-3xl p-6 border border-slate-800 shadow-lg space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center space-x-2">
+                            <i data-lucide="line-chart" class="w-4 h-4 text-brand-500"></i>
+                            <span>12-Month Historical Analytics</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Track monthly earnings and worked hours across the past year</p>
+                    </div>
+
+                    <!-- Metric Toggle Buttons -->
+                    <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                        <button id="chartMetricEarnedBtn" onclick="toggleChartMetric('earned')" class="px-3 py-1 rounded-lg bg-brand-500 text-slate-950 font-bold transition-all">Earnings ($)</button>
+                        <button id="chartMetricHoursBtn" onclick="toggleChartMetric('hours')" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-all">Hours (hrs)</button>
+                    </div>
+                </div>
+
+                <!-- Canvas Chart Container -->
+                <div class="h-64 sm:h-72 w-full pt-2">
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </section>
+
+            <!-- EDITABLE TIMECARD LOGS MANAGER SECTION -->
+            <section class="bg-slate-900/80 rounded-3xl p-6 border border-slate-800 shadow-lg space-y-5">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-base font-bold text-white flex items-center space-x-2">
+                            <i data-lucide="edit-3" class="w-4 h-4 text-brand-500"></i>
+                            <span>Editable Shift Logs & Timecard</span>
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-0.5">Manually add, adjust missed shift timestamps, or delete entries</p>
+                    </div>
+
+                    <!-- Add Shift Modal Button -->
+                    <button onclick="openShiftModal()" class="bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center space-x-1.5 transition-all shadow-md shadow-brand-500/20">
+                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                        <span>Add / Log Missed Shift</span>
+                    </button>
+                </div>
+
+                <!-- Shifts Log Table -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span id="logsShiftCount" class="text-xs font-mono text-slate-400">Showing all records</span>
+                    </div>
+
+                    <div id="editableShiftsList" class="space-y-3 max-h-[500px] overflow-y-auto no-scrollbar">
+                        <!-- Populated dynamically with editable shift entries -->
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- SHIFT ADD / EDIT MODAL -->
+    <div id="shiftModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl transform scale-95 transition-transform duration-200" id="shiftModalBox">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-base text-white flex items-center space-x-2" id="shiftModalTitle">
+                    <i data-lucide="clock" class="w-4 h-4 text-brand-500"></i>
+                    <span>Log Shift Entry</span>
+                </h3>
+                <button onclick="closeShiftModal()" class="text-slate-400 hover:text-white p-1">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <form id="shiftForm" class="space-y-4">
+                <input type="hidden" id="modalShiftId">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Clock In Time</label>
+                    <input type="datetime-local" id="modalClockIn" required class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 rounded-xl p-2.5 text-xs font-mono text-white outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Clock Out Time</label>
+                    <input type="datetime-local" id="modalClockOut" required class="w-full bg-slate-950 border border-slate-800 focus:border-brand-500 rounded-xl p-2.5 text-xs font-mono text-white outline-none">
+                </div>
+
+                <p class="text-[11px] text-slate-400">Earnings for this shift will automatically recalculate based on your current setup rate.</p>
+
+                <div class="flex space-x-3 pt-2">
+                    <button type="button" onclick="closeShiftModal()" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition-colors">Cancel</button>
+                    <button type="submit" class="flex-1 py-2.5 rounded-xl bg-brand-500 hover:bg-brand-600 text-slate-950 font-bold text-xs transition-colors shadow-lg shadow-brand-500/20">Save Shift</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- RESET CONFIRMATION MODAL DIALOG -->
+    <div id="confirmModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 opacity-0 pointer-events-none transition-opacity duration-200">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-2xl transform scale-95 transition-transform duration-200" id="confirmModalBox">
+            <div class="flex items-center space-x-3 text-red-400">
+                <div class="p-2 bg-red-500/10 rounded-xl border border-red-500/20">
+                    <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+                </div>
+                <h3 class="font-bold text-lg text-white" id="confirmTitle">Confirm Reset</h3>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed" id="confirmDescription">Are you sure you want to delete these records? This action cannot be undone.</p>
+            <div class="flex space-x-3 pt-2">
+                <button id="cancelModalBtn" class="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition-colors">Cancel</button>
+                <button id="executeModalBtn" class="flex-1 py-2.5 rounded-xl bg-red-500 hover:bg-red-600 text-white font-semibold text-xs transition-colors shadow-lg shadow-red-500/20">Delete / Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- GLOBAL TOAST NOTIFICATION DIALOG -->
+    <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-4 py-3 rounded-2xl border border-slate-700 shadow-2xl text-xs font-semibold tracking-wide transition-all duration-300 opacity-0 pointer-events-none transform translate-y-4 flex items-center space-x-2 z-50">
+        <i data-lucide="info" class="w-4 h-4 text-brand-500"></i>
+        <span id="toastMsg">Notification message</span>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // State Initialization & LocalStorage Persistence
+        const DEFAULT_STATE = {
+            grossIncome: 5000,
+            hoursPerDay: 8,
+            daysPerMonth: 21.67,
+            deductions: [
+                { id: '1', name: 'Federal & State Taxes', amount: 950 },
+                { id: '2', name: 'Health & Dental Insurance', amount: 180 },
+                { id: '3', name: '401(k) Retirement Savings', amount: 250 }
+            ],
+            isClockedIn: false,
+            clockInTimestamp: null,
+            shifts: [] // { id, startTime, endTime, durationSec, netEarned, grossEarned }
+        };
+
+        let state = { ...DEFAULT_STATE };
+        let activePage = 'live';
+        let activeMetric = 'earned'; // 'earned' or 'hours'
+        let chartInstance = null;
+        let pendingResetType = null;
+
+        // Economic Live Data Baseline
+        let currentBtcPrice = 67840.00;
+        let currentUSDebt = 36120450000000;
+
+        const elements = {
+            monthlyIncomeInput: document.getElementById('monthlyIncomeInput'),
+            hoursPerDayInput: document.getElementById('hoursPerDayInput'),
+            daysPerMonthInput: document.getElementById('daysPerMonthInput'),
+            grossMonthlyDisplay: document.getElementById('grossMonthlyDisplay'),
+            netMonthlyDisplay: document.getElementById('netMonthlyDisplay'),
+            totalDeductionsDisplay: document.getElementById('totalDeductionsDisplay'),
+            addDeductionForm: document.getElementById('addDeductionForm'),
+            deductionNameInput: document.getElementById('deductionNameInput'),
+            deductionAmountInput: document.getElementById('deductionAmountInput'),
+            deductionsList: document.getElementById('deductionsList'),
+            liveCounter: document.getElementById('liveCounter'),
+            liveCounterSub: document.getElementById('liveCounterSub'),
+            ratePerSecond: document.getElementById('ratePerSecond'),
+            ratePerMinute: document.getElementById('ratePerMinute'),
+            ratePerHour: document.getElementById('ratePerHour'),
+            statusBadge: document.getElementById('statusBadge'),
+            statusDot: document.getElementById('statusDot'),
+            statusText: document.getElementById('statusText'),
+            activeDuration: document.getElementById('activeDuration'),
+            clockToggleBtn: document.getElementById('clockToggleBtn'),
+            clockBtnText: document.getElementById('clockBtnText'),
+            clockIcon: document.getElementById('clockIcon'),
+            mainCounterCard: document.getElementById('mainCounterCard'),
+            ambientGlow: document.getElementById('ambientGlow'),
+            toast: document.getElementById('toast'),
+            toastMsg: document.getElementById('toastMsg'),
+            // Timeframe Summaries
+            todayNetEarned: document.getElementById('todayNetEarned'),
+            todayGrossEarned: document.getElementById('todayGrossEarned'),
+            todayHours: document.getElementById('todayHours'),
+            weekNetEarned: document.getElementById('weekNetEarned'),
+            weekGrossEarned: document.getElementById('weekGrossEarned'),
+            weekHours: document.getElementById('weekHours'),
+            monthNetEarned: document.getElementById('monthNetEarned'),
+            monthGrossEarned: document.getElementById('monthGrossEarned'),
+            monthHours: document.getElementById('monthHours'),
+            // Navigation Pages
+            pageLive: document.getElementById('pageLive'),
+            pageLogs: document.getElementById('pageLogs'),
+            navLiveTab: document.getElementById('navLiveTab'),
+            navLogsTab: document.getElementById('navLogsTab'),
+            // Logs View
+            editableShiftsList: document.getElementById('editableShiftsList'),
+            logsShiftCount: document.getElementById('logsShiftCount'),
+            // Economic Displays
+            btcPriceDisplay: document.getElementById('btcPriceDisplay'),
+            usDebtDisplay: document.getElementById('usDebtDisplay'),
+            // Modal Elements
+            confirmModal: document.getElementById('confirmModal'),
+            confirmModalBox: document.getElementById('confirmModalBox'),
+            confirmTitle: document.getElementById('confirmTitle'),
+            confirmDescription: document.getElementById('confirmDescription'),
+            cancelModalBtn: document.getElementById('cancelModalBtn'),
+            executeModalBtn: document.getElementById('executeModalBtn'),
+            // Shift Modal
+            shiftModal: document.getElementById('shiftModal'),
+            shiftModalBox: document.getElementById('shiftModalBox'),
+            shiftForm: document.getElementById('shiftForm'),
+            modalShiftId: document.getElementById('modalShiftId'),
+            modalClockIn: document.getElementById('modalClockIn'),
+            modalClockOut: document.getElementById('modalClockOut'),
+            shiftModalTitle: document.getElementById('shiftModalTitle')
+        };
+
+        function saveState() {
+            try {
+                localStorage.setItem('wagepulse_state_v3', JSON.stringify(state));
+            } catch (e) {
+                console.error("LocalStorage error:", e);
+            }
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('wagepulse_state_v3');
+                if (saved) {
+                    state = { ...DEFAULT_STATE, ...JSON.parse(saved) };
+                }
+            } catch (e) {
+                console.error("LocalStorage load error:", e);
+                state = { ...DEFAULT_STATE };
+            }
+        }
+
+        let toastTimeout;
+        function showToast(message) {
+            elements.toastMsg.textContent = message;
+            elements.toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-4');
+            elements.toast.classList.add('opacity-100', 'translate-y-0');
+            
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                elements.toast.classList.remove('opacity-100', 'translate-y-0');
+                elements.toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-4');
+            }, 3000);
+        }
+
+        // Financial Rate Calculations
+        function calculateRates() {
+            const gross = parseFloat(state.grossIncome) || 0;
+            const hoursPerDay = parseFloat(state.hoursPerDay) || 8;
+            const daysPerMonth = parseFloat(state.daysPerMonth) || 21.67;
+
+            const totalDeductions = state.deductions.reduce((sum, d) => sum + (parseFloat(d.amount) || 0), 0);
+            const netMonthly = Math.max(0, gross - totalDeductions);
+
+            const totalHoursPerMonth = hoursPerDay * daysPerMonth;
+            const netPerHour = totalHoursPerMonth > 0 ? netMonthly / totalHoursPerMonth : 0;
+            const grossPerHour = totalHoursPerMonth > 0 ? gross / totalHoursPerMonth : 0;
+
+            const netPerMinute = netPerHour / 60;
+            const netPerSecond = netPerMinute / 60;
+            const grossPerSecond = grossPerHour / 3600;
+
+            return {
+                grossMonthly: gross,
+                totalDeductions,
+                netMonthly,
+                netPerHour,
+                grossPerHour,
+                netPerMinute,
+                netPerSecond,
+                grossPerSecond
+            };
+        }
+
+        function getActiveSessionSeconds() {
+            if (state.isClockedIn && state.clockInTimestamp) {
+                return Math.max(0, (Date.now() - state.clockInTimestamp) / 1000);
+            }
+            return 0;
+        }
+
+        // Date Helpers
+        function isSameDay(d1, d2) {
+            return d1.getFullYear() === d2.getFullYear() &&
+                   d1.getMonth() === d2.getMonth() &&
+                   d1.getDate() === d2.getDate();
+        }
+
+        function isSameWeek(d1, d2) {
+            const startOfWeek = (d) => {
+                const date = new Date(d);
+                const day = date.getDay();
+                const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+                return new Date(date.setDate(diff)).setHours(0,0,0,0);
+            };
+            return startOfWeek(d1) === startOfWeek(d2);
+        }
+
+        function isSameMonth(d1, d2) {
+            return d1.getFullYear() === d2.getFullYear() &&
+                   d1.getMonth() === d2.getMonth();
+        }
+
+        function formatDuration(totalSeconds) {
+            const hrs = Math.floor(totalSeconds / 3600);
+            const mins = Math.floor((totalSeconds % 3600) / 60);
+            return `${hrs}h ${mins}m`;
+        }
+
+        function formatDateTimeLocal(timestamp) {
+            const date = new Date(timestamp);
+            const pad = (n) => n.toString().padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        }
+
+        // Page Switcher Navigation
+        window.switchPage = function(page) {
+            activePage = page;
+            if (page === 'live') {
+                elements.pageLive.classList.remove('hidden');
+                elements.pageLogs.classList.add('hidden');
+
+                elements.navLiveTab.className = "px-3 py-1.5 rounded-lg bg-brand-500 text-slate-950 font-bold transition-all duration-200 flex items-center space-x-1.5";
+                elements.navLogsTab.className = "px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all duration-200 flex items-center space-x-1.5";
+            } else {
+                elements.pageLive.classList.add('hidden');
+                elements.pageLogs.classList.remove('hidden');
+
+                elements.navLogsTab.className = "px-3 py-1.5 rounded-lg bg-brand-500 text-slate-950 font-bold transition-all duration-200 flex items-center space-x-1.5";
+                elements.navLiveTab.className = "px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all duration-200 flex items-center space-x-1.5";
+
+                renderLogsPage();
+            }
+            if (window.lucide) lucide.createIcons();
+        };
+
+        // Render Page UI
+        function renderUI() {
+            const rates = calculateRates();
+
+            // Inputs Sync
+            elements.monthlyIncomeInput.value = state.grossIncome;
+            elements.hoursPerDayInput.value = state.hoursPerDay;
+            elements.daysPerMonthInput.value = state.daysPerMonth;
+
+            // Monthly Net/Gross Displays
+            elements.grossMonthlyDisplay.textContent = `$${rates.grossMonthly.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            elements.netMonthlyDisplay.textContent = `$${rates.netMonthly.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            elements.totalDeductionsDisplay.textContent = `-$${rates.totalDeductions.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+            // Rates Breakdown
+            elements.ratePerSecond.textContent = `$${rates.netPerSecond.toFixed(4)}`;
+            elements.ratePerMinute.textContent = `$${rates.netPerMinute.toFixed(2)}`;
+            elements.ratePerHour.textContent = `$${rates.netPerHour.toFixed(2)}`;
+
+            // Deductions Items Rendering
+            elements.deductionsList.innerHTML = '';
+            if (state.deductions.length === 0) {
+                elements.deductionsList.innerHTML = `<div class="text-center py-4 text-xs text-slate-500 font-medium">No deductions added yet.</div>`;
+            } else {
+                state.deductions.forEach(d => {
+                    const row = document.createElement('div');
+                    row.className = 'flex items-center justify-between bg-slate-950/70 p-3 rounded-xl border border-slate-800/60 text-xs';
+                    row.innerHTML = `
+                        <div class="flex items-center space-x-2">
+                            <span class="font-medium text-slate-200">${escapeHtml(d.name)}</span>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span class="font-mono text-red-400 font-semibold">-$${parseFloat(d.amount).toFixed(2)}</span>
+                            <button onclick="removeDeduction('${d.id}')" class="text-slate-500 hover:text-red-400 transition-colors p-1" title="Delete">
+                                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                            </button>
+                        </div>
+                    `;
+                    elements.deductionsList.appendChild(row);
+                });
+            }
+
+            // Status Styling
+            if (state.isClockedIn) {
+                elements.statusBadge.className = 'inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/30';
+                elements.statusDot.className = 'w-2 h-2 rounded-full bg-brand-500 animate-ping';
+                elements.statusText.textContent = 'CLOCKED IN';
+
+                elements.clockToggleBtn.className = 'w-full py-4 px-6 rounded-2xl font-bold text-base flex items-center justify-center space-x-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition-all duration-200 active:scale-[0.98]';
+                elements.clockBtnText.textContent = 'CLOCK OUT & SAVE SHIFT';
+                elements.clockIcon.setAttribute('data-lucide', 'square');
+                
+                elements.mainCounterCard.classList.add('glow-active');
+                elements.ambientGlow.classList.remove('opacity-0');
+                elements.ambientGlow.classList.add('opacity-40');
+            } else {
+                elements.statusBadge.className = 'inline-flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700/50';
+                elements.statusDot.className = 'w-2 h-2 rounded-full bg-slate-500';
+                elements.statusText.textContent = 'CLOCKED OUT';
+
+                elements.clockToggleBtn.className = 'w-full py-4 px-6 rounded-2xl font-bold text-base flex items-center justify-center space-x-3 bg-brand-500 hover:bg-brand-600 text-slate-950 transition-all duration-200 shadow-lg shadow-brand-500/20 active:scale-[0.98]';
+                elements.clockBtnText.textContent = 'CLOCK IN';
+                elements.clockIcon.setAttribute('data-lucide', 'play');
+
+                elements.mainCounterCard.classList.remove('glow-active');
+                elements.ambientGlow.classList.remove('opacity-40');
+                elements.ambientGlow.classList.add('opacity-0');
+            }
+
+            renderHistorySummaries(rates);
+            if (activePage === 'logs') renderLogsPage();
+            if (window.lucide) lucide.createIcons();
+            updateLiveDisplay();
+        }
+
+        // Timeframe Summaries Calculations
+        function renderHistorySummaries(rates) {
+            const now = new Date();
+            const activeSec = getActiveSessionSeconds();
+
+            let todaySec = 0, weekSec = 0, monthSec = 0;
+            let todayNet = 0, weekNet = 0, monthNet = 0;
+            let todayGross = 0, weekGross = 0, monthGross = 0;
+
+            state.shifts.forEach(shift => {
+                const shiftDate = new Date(shift.endTime);
+                if (isSameDay(now, shiftDate)) {
+                    todaySec += shift.durationSec;
+                    todayNet += shift.netEarned;
+                    todayGross += shift.grossEarned;
+                }
+                if (isSameWeek(now, shiftDate)) {
+                    weekSec += shift.durationSec;
+                    weekNet += shift.netEarned;
+                    weekGross += shift.grossEarned;
+                }
+                if (isSameMonth(now, shiftDate)) {
+                    monthSec += shift.durationSec;
+                    monthNet += shift.netEarned;
+                    monthGross += shift.grossEarned;
+                }
+            });
+
+            if (state.isClockedIn) {
+                const liveNet = activeSec * rates.netPerSecond;
+                const liveGross = activeSec * rates.grossPerSecond;
+
+                todaySec += activeSec; todayNet += liveNet; todayGross += liveGross;
+                weekSec += activeSec; weekNet += liveNet; weekGross += liveGross;
+                monthSec += activeSec; monthNet += liveNet; monthGross += liveGross;
+            }
+
+            elements.todayNetEarned.textContent = `$${todayNet.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            elements.todayGrossEarned.textContent = `Gross: $${todayGross.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            elements.todayHours.textContent = formatDuration(todaySec);
+
+            elements.weekNetEarned.textContent = `$${weekNet.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            elements.weekGrossEarned.textContent = `Gross: $${weekGross.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            elements.weekHours.textContent = formatDuration(weekSec);
+
+            elements.monthNetEarned.textContent = `$${monthNet.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            elements.monthGrossEarned.textContent = `Gross: $${monthGross.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            elements.monthHours.textContent = formatDuration(monthSec);
+        }
+
+        // Ticker Loop for Live Clock + US Debt
+        function updateLiveDisplay() {
+            const rates = calculateRates();
+            const activeSec = getActiveSessionSeconds();
+
+            const now = new Date();
+            let todayNetEarned = 0;
+            state.shifts.forEach(shift => {
+                if (isSameDay(now, new Date(shift.endTime))) {
+                    todayNetEarned += shift.netEarned;
+                }
+            });
+
+            if (state.isClockedIn) {
+                todayNetEarned += (activeSec * rates.netPerSecond);
+            }
+
+            const formatted = todayNetEarned.toFixed(4);
+            const parts = formatted.split('.');
+            const dollarsAndCents = parseFloat(`${parts[0]}.${parts[1].substring(0,2)}`).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const fractionalCents = parts[1].substring(2, 4);
+
+            elements.liveCounter.textContent = dollarsAndCents;
+            elements.liveCounterSub.textContent = `.${fractionalCents}`;
+
+            const hrs = Math.floor(activeSec / 3600);
+            const mins = Math.floor((activeSec % 3600) / 60);
+            const secs = Math.floor(activeSec % 60);
+            const pad = (n) => n.toString().padStart(2, '0');
+            elements.activeDuration.textContent = `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+
+            // US Debt Increment Simulation (~$100k/sec)
+            currentUSDebt += 1000;
+            elements.usDebtDisplay.textContent = `$${Math.floor(currentUSDebt).toLocaleString()}`;
+        }
+
+        function tickerLoop() {
+            updateLiveDisplay();
+            if (state.isClockedIn) {
+                renderHistorySummaries(calculateRates());
+            }
+            requestAnimationFrame(tickerLoop);
+        }
+
+        // Fetch Bitcoin Price Real-time
+        async function fetchBtcPrice() {
+            try {
+                const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd&include_24hr_change=true');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.bitcoin) {
+                        currentBtcPrice = data.bitcoin.usd;
+                        const change = data.bitcoin.usd_24h_change || 0;
+                        elements.btcPriceDisplay.textContent = `$${currentBtcPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        const changeElem = document.getElementById('btcChange');
+                        changeElem.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
+                        changeElem.className = `font-mono text-[11px] font-semibold ${change >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+                    }
+                }
+            } catch (e) {
+                // Fallback simulation
+                currentBtcPrice += (Math.random() - 0.48) * 15;
+                elements.btcPriceDisplay.textContent = `$${currentBtcPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+            }
+        }
+
+        // RENDER MONTHLY LOGS & CHART PAGE
+        function renderLogsPage() {
+            elements.editableShiftsList.innerHTML = '';
+            elements.logsShiftCount.textContent = `${state.shifts.length} shift record${state.shifts.length === 1 ? '' : 's'} logged`;
+
+            if (state.shifts.length === 0) {
+                elements.editableShiftsList.innerHTML = `<div class="text-center py-10 text-xs text-slate-500 font-medium">No recorded shifts yet. Use "Add / Log Missed Shift" above to add past shifts manually.</div>`;
+            } else {
+                const sorted = [...state.shifts].sort((a, b) => b.endTime - a.endTime);
+                sorted.forEach(shift => {
+                    const startFormatted = new Date(shift.startTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    const endFormatted = new Date(shift.endTime).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                    const row = document.createElement('div');
+                    row.className = 'flex flex-col sm:flex-row sm:items-center justify-between bg-slate-950/80 p-4 rounded-2xl border border-slate-800/80 gap-3 text-xs';
+                    row.innerHTML = `
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="font-bold text-white">${startFormatted}  ➔  ${endFormatted}</span>
+                            </div>
+                            <div class="flex items-center space-x-3 text-slate-400 font-mono text-[11px]">
+                                <span>Duration: <strong class="text-slate-200">${formatDuration(shift.durationSec)}</strong></span>
+                                <span>Net: <strong class="text-brand-400">$${shift.netEarned.toFixed(2)}</strong></span>
+                                <span>Gross: <strong class="text-slate-300">$${shift.grossEarned.toFixed(2)}</strong></span>
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2 self-end sm:self-center">
+                            <button onclick="openShiftModal('${shift.id}')" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold border border-slate-700 transition-colors flex items-center space-x-1" title="Edit Shift">
+                                <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                <span>Edit</span>
+                            </button>
+                            <button onclick="deleteShift('${shift.id}')" class="p-1.5 rounded-xl text-slate-500 hover:text-red-400 hover:bg-red-500/10 transition-colors" title="Delete Entry">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    `;
+                    elements.editableShiftsList.appendChild(row);
+                });
+            }
+
+            renderMonthlyChart();
+        }
+
+        // Render 12-Month Interactive Chart.js
+        function renderMonthlyChart() {
+            const ctx = document.getElementById('monthlyChart').getContext('2d');
+            
+            // Build 12 Months Labels
+            const monthsLabels = [];
+            const earningsData = new Array(12).fill(0);
+            const hoursData = new Array(12).fill(0);
+
+            const now = new Date();
+            for (let i = 11; i >= 0; i--) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                monthsLabels.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
+            }
+
+            // Aggregate Shift Data into 12 Months
+            state.shifts.forEach(shift => {
+                const shiftDate = new Date(shift.endTime);
+                for (let i = 11; i >= 0; i--) {
+                    const targetDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                    if (shiftDate.getFullYear() === targetDate.getFullYear() && shiftDate.getMonth() === targetDate.getMonth()) {
+                        earningsData[11 - i] += shift.netEarned;
+                        hoursData[11 - i] += (shift.durationSec / 3600);
+                        break;
+                    }
+                }
+            });
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            const dataPoints = activeMetric === 'earned' ? earningsData : hoursData;
+            const labelTitle = activeMetric === 'earned' ? 'Net Earned ($)' : 'Hours Worked (hrs)';
+            const color = activeMetric === 'earned' ? '#22c55e' : '#3b82f6';
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: monthsLabels,
+                    datasets: [{
+                        label: labelTitle,
+                        data: dataPoints,
+                        backgroundColor: color + '40',
+                        borderColor: color,
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        hoverBackgroundColor: color
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: (ctx) => `${activeMetric === 'earned' ? '$' : ''}${ctx.raw.toFixed(2)}${activeMetric === 'hours' ? ' hrs' : ''}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#94a3b8', font: { family: 'Inter', size: 10 } }
+                        },
+                        y: {
+                            grid: { color: '#1e293b' },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { family: 'JetBrains Mono', size: 10 },
+                                callback: (val) => activeMetric === 'earned' ? `$${val}` : `${val}h`
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        window.toggleChartMetric = function(metric) {
+            activeMetric = metric;
+            const earnedBtn = document.getElementById('chartMetricEarnedBtn');
+            const hoursBtn = document.getElementById('chartMetricHoursBtn');
+
+            if (metric === 'earned') {
+                earnedBtn.className = "px-3 py-1 rounded-lg bg-brand-500 text-slate-950 font-bold transition-all";
+                hoursBtn.className = "px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-all";
+            } else {
+                hoursBtn.className = "px-3 py-1 rounded-lg bg-blue-500 text-white font-bold transition-all";
+                earnedBtn.className = "px-3 py-1 rounded-lg text-slate-400 hover:text-white transition-all";
+            }
+            renderMonthlyChart();
+        };
+
+        // Shift Modal Add/Edit Functions
+        window.openShiftModal = function(id = null) {
+            if (id) {
+                const shift = state.shifts.find(s => s.id === id);
+                if (shift) {
+                    elements.modalShiftId.value = shift.id;
+                    elements.modalClockIn.value = formatDateTimeLocal(shift.startTime);
+                    elements.modalClockOut.value = formatDateTimeLocal(shift.endTime);
+                    elements.shiftModalTitle.innerHTML = `<i data-lucide="edit-3" class="w-4 h-4 text-brand-500"></i><span>Edit Shift Entry</span>`;
+                }
+            } else {
+                elements.modalShiftId.value = '';
+                const now = new Date();
+                const past = new Date(now.getTime() - (8 * 3600 * 1000));
+                elements.modalClockIn.value = formatDateTimeLocal(past);
+                elements.modalClockOut.value = formatDateTimeLocal(now);
+                elements.shiftModalTitle.innerHTML = `<i data-lucide="plus-circle" class="w-4 h-4 text-brand-500"></i><span>Log Missed Shift</span>`;
+            }
+
+            elements.shiftModal.classList.remove('opacity-0', 'pointer-events-none');
+            elements.shiftModalBox.classList.remove('scale-95');
+            elements.shiftModalBox.classList.add('scale-100');
+            if (window.lucide) lucide.createIcons();
+        };
+
+        window.closeShiftModal = function() {
+            elements.shiftModal.classList.add('opacity-0', 'pointer-events-none');
+            elements.shiftModalBox.classList.remove('scale-100');
+            elements.shiftModalBox.classList.add('scale-95');
+        };
+
+        function saveShiftModal(e) {
+            e.preventDefault();
+            const id = elements.modalShiftId.value;
+            const startTime = new Date(elements.modalClockIn.value).getTime();
+            const endTime = new Date(elements.modalClockOut.value).getTime();
+
+            if (isNaN(startTime) || isNaN(endTime) || endTime <= startTime) {
+                showToast("Clock-out time must be after clock-in time.");
+                return;
+            }
+
+            const rates = calculateRates();
+            const durationSec = (endTime - startTime) / 1000;
+            const netEarned = durationSec * rates.netPerSecond;
+            const grossEarned = durationSec * rates.grossPerSecond;
+
+            if (id) {
+                // Edit existing
+                state.shifts = state.shifts.map(s => s.id === id ? { id, startTime, endTime, durationSec, netEarned, grossEarned } : s);
+                showToast("Shift entry updated!");
+            } else {
+                // Add new
+                state.shifts.push({ id: Date.now().toString(), startTime, endTime, durationSec, netEarned, grossEarned });
+                showToast("Missed shift logged successfully!");
+            }
+
+            closeShiftModal();
+            saveState();
+            renderUI();
+        }
+
+        // Actions / Reset Logic
+        function toggleClockIn() {
+            const rates = calculateRates();
+
+            if (!state.isClockedIn) {
+                state.isClockedIn = true;
+                state.clockInTimestamp = Date.now();
+                showToast("Clocked in! Live tracker active.");
+            } else {
+                const endTime = Date.now();
+                const startTime = state.clockInTimestamp;
+                const durationSec = Math.max(0, (endTime - startTime) / 1000);
+
+                if (durationSec > 1) {
+                    const netEarned = durationSec * rates.netPerSecond;
+                    const grossEarned = durationSec * rates.grossPerSecond;
+
+                    state.shifts.push({
+                        id: Date.now().toString(),
+                        startTime,
+                        endTime,
+                        durationSec,
+                        netEarned,
+                        grossEarned
+                    });
+                    showToast(`Shift saved: +$${netEarned.toFixed(2)} net earned.`);
+                } else {
+                    showToast("Shift discarded (too short).");
+                }
+
+                state.isClockedIn = false;
+                state.clockInTimestamp = null;
+            }
+
+            saveState();
+            renderUI();
+        }
+
+        window.deleteShift = function(id) {
+            state.shifts = state.shifts.filter(s => s.id !== id);
+            saveState();
+            renderUI();
+            showToast("Shift log deleted.");
+        };
+
+        window.confirmReset = function(type) {
+            pendingResetType = type;
+            let title = "Confirm Reset";
+            let desc = "Are you sure you want to execute this reset?";
+
+            if (type === 'day') {
+                title = "Reset Today's Shifts?";
+                desc = "This will permanently delete all completed shift logs for TODAY.";
+            } else if (type === 'week') {
+                title = "Reset This Week's Log?";
+                desc = "This will permanently delete all shift logs completed THIS WEEK.";
+            } else if (type === 'month') {
+                title = "Reset All Work History?";
+                desc = "This will permanently clear ALL monthly logs, completed shifts, and historical records.";
+            }
+
+            elements.confirmTitle.textContent = title;
+            elements.confirmDescription.textContent = desc;
+
+            elements.confirmModal.classList.remove('opacity-0', 'pointer-events-none');
+            elements.confirmModalBox.classList.remove('scale-95');
+            elements.confirmModalBox.classList.add('scale-100');
+        };
+
+        function closeModal() {
+            elements.confirmModal.classList.add('opacity-0', 'pointer-events-none');
+            elements.confirmModalBox.classList.remove('scale-100');
+            elements.confirmModalBox.classList.add('scale-95');
+            pendingResetType = null;
+        }
+
+        function executeReset() {
+            const now = new Date();
+
+            if (pendingResetType === 'day') {
+                state.shifts = state.shifts.filter(s => !isSameDay(now, new Date(s.endTime)));
+                if (state.isClockedIn) state.clockInTimestamp = Date.now();
+                showToast("Today's shifts reset.");
+            } else if (pendingResetType === 'week') {
+                state.shifts = state.shifts.filter(s => !isSameWeek(now, new Date(s.endTime)));
+                showToast("Current week's shifts reset.");
+            } else if (pendingResetType === 'month') {
+                state.shifts = [];
+                if (state.isClockedIn) {
+                    state.isClockedIn = false;
+                    state.clockInTimestamp = null;
+                }
+                showToast("All work history logs reset.");
+            }
+
+            closeModal();
+            saveState();
+            renderUI();
+        }
+
+        function addDeduction(e) {
+            e.preventDefault();
+            const name = elements.deductionNameInput.value.trim();
+            const amount = parseFloat(elements.deductionAmountInput.value);
+
+            if (!name || isNaN(amount) || amount < 0) return;
+
+            state.deductions.push({ id: Date.now().toString(), name, amount });
+            elements.deductionNameInput.value = '';
+            elements.deductionAmountInput.value = '';
+
+            saveState();
+            renderUI();
+            showToast(`Added deduction: ${name}`);
+        }
+
+        window.removeDeduction = function(id) {
+            state.deductions = state.deductions.filter(d => d.id !== id);
+            saveState();
+            renderUI();
+            showToast("Deduction removed.");
+        };
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[m]);
+        }
+
+        function setupListeners() {
+            elements.clockToggleBtn.addEventListener('click', toggleClockIn);
+            elements.addDeductionForm.addEventListener('submit', addDeduction);
+            elements.shiftForm.addEventListener('submit', saveShiftModal);
+
+            elements.cancelModalBtn.addEventListener('click', closeModal);
+            elements.executeModalBtn.addEventListener('click', executeReset);
+
+            elements.monthlyIncomeInput.addEventListener('input', (e) => {
+                state.grossIncome = parseFloat(e.target.value) || 0;
+                saveState();
+                renderUI();
+            });
+
+            elements.hoursPerDayInput.addEventListener('input', (e) => {
+                state.hoursPerDay = parseFloat(e.target.value) || 0;
+                saveState();
+                renderUI();
+            });
+
+            elements.daysPerMonthInput.addEventListener('input', (e) => {
+                state.daysPerMonth = parseFloat(e.target.value) || 0;
+                saveState();
+                renderUI();
+            });
+        }
+
+        window.onload = function() {
+            loadState();
+            setupListeners();
+            renderUI();
+            tickerLoop();
+
+            fetchBtcPrice();
+            setInterval(fetchBtcPrice, 30000);
+        };
+    </script>
+</body>
+</html>
